@@ -1,20 +1,32 @@
 #!/usr/bin/env bash
 
 TEMP_FILE="$(mktemp)"
-echo "tempfile: $TEMP_FILE"
+
+: ${KINDLE_MAIL:="${1:=""}"}
+
+[[ -z "$KINDLE_MAIL" ]] && { echo "kindle mail address needs to be specified"; exit 1; }
+
 parallel -k "wget -q -O - '{}'" \
   | pandoc \
-    -f html -t html \
     -s \
+    -f html -t html \
     --toc --toc-depth 1 \
     -o ${TEMP_FILE}.html
+
 ebook-convert \
   ${TEMP_FILE}.html ${TEMP_FILE}.mobi \
   --use-auto-toc \
-  --output-profile kindle
+  --output-profile kindle \
+  >/dev/null 2>&1
 
   # --use-auto-toc \
 
+echo "test" \
+  | mutt \
+  -F ~/sinan/git_repos/dotfiles/imap_muttrc \
+  -s "bla" \
+  -a ${TEMP_FILE}.mobi \
+  -- ${KINDLE_MAIL}
 
-
+rm -f ${TEMP_FILE} ${TEMP_FILE}.html ${TEMP_FILE}.mobi
 
