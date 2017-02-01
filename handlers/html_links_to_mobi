@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+TEMP_FILE="$(mktemp)"
+echo "tempfile: $TEMP_FILE"
+parallel -k "wget -q -O - '{}'" \
+  | pandoc \
+    -f html -t html \
+    -s \
+    --toc --toc-depth 1 \
+    -o ${TEMP_FILE}.html
+ebook-convert \
+  ${TEMP_FILE}.html ${TEMP_FILE}.mobi \
+  --use-auto-toc \
+  --output-profile kindle
+
+  # --use-auto-toc \
+
+
+
+

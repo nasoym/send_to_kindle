@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+html_content="$(cat -)"
+title="$( echo "$html_content" \
+  | hxnormalize -x 2>/dev/null \
+  | hxselect  -c title 2>/dev/null \
+  | sed \
+    -e 's/ /_/g' \
+    -e 's/[^a-zA-Z0-9_.]//g'
+)"
+
+echo "$html_content" > ${title}.html
+
