@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
 
-echo "to kindle default"
+echo -e "to kindle default hello world \n\n"
 
