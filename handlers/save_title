@@ -6,7 +6,8 @@ title="$( echo "$html_content" \
   | hxselect  -c title 2>/dev/null \
   | sed \
     -e 's/ /_/g' \
-    -e 's/[^a-zA-Z0-9_.]//g'
+    -e 's/[^a-zA-Z0-9_.]//g' \
+  | sed -n '1p'
 )"
 
 echo "$html_content" > ${title}.html

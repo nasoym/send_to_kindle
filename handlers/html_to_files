@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+save_title_script="$(dirname $(realpath $0))/save_title"
+
+parallel -k "wget -q -O - '{}' | $save_title_script"
+
