@@ -18,6 +18,8 @@ parallel --keep-order \
     --toc-depth 2 \
     --output=${TEMP_FILE}.html
 
+echo "converting ebooks" >&2
+
 ebook-convert \
   ${TEMP_FILE}.html \
   ${TEMP_FILE}.mobi \
