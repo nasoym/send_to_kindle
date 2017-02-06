@@ -28,6 +28,8 @@ ebook-convert \
   >/dev/null 2>&1
   # --use-auto-toc \
 
+echo "sending ebook" >&2
+
 echo "body" \
   | mutt \
     -F ~/sinan/git_repos/dotfiles/imap_muttrc \
