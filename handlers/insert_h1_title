@@ -3,7 +3,7 @@
 html_content="$(cat -)"
 title="$( echo "$html_content" \
   | hxnormalize -x 2>/dev/null \
-  | hxselect  -c title 2>/dev/null
+  | hxselect -c title 2>/dev/null
 )"
 
 echo "$html_content" \
@@ -13,5 +13,5 @@ echo "$html_content" \
     -e 's/\(<\/\?h\)3/\12/g' \
     -e 's/\(<\/\?h\)2/\13/g' \
     -e 's/\(<\/\?h\)1/\12/g' \
-    -e "s/\(<body[^>]*>\)/\1<h1>${title}<\/h1>/g"
+    -e "s/\(<body[^>]*>\)/\1\n<h1>${title}<\/h1>\n/g"
 
