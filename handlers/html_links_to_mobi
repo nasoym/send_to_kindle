@@ -5,11 +5,16 @@
 
 TEMP_FILE="$(mktemp)"
 
+insert_title_script="$(dirname $(realpath $0))/insert_h1_title"
+
+echo "download links" >&2
+
 parallel --keep-order \
   "wget \
     --quiet \
     --output-document=- \
-    '{}'" \
+    '{}' \
+    | $insert_title_script " \
   | pandoc \
     --standalone \
     --from=html \
@@ -23,7 +28,6 @@ echo "converting ebooks" >&2
 ebook-convert \
   ${TEMP_FILE}.html \
   ${TEMP_FILE}.mobi \
-  --use-auto-toc \
   --output-profile kindle \
   >/dev/null 2>&1
   # --use-auto-toc \

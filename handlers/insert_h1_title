@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+html_content="$(cat -)"
+title="$( echo "$html_content" \
+  | hxnormalize -x 2>/dev/null \
+  | hxselect  -c title 2>/dev/null
+)"
+
+echo "$html_content" \
+  | sed \
+    -e 's/\(<\/\?h\)5/\16/g' \
+    -e 's/\(<\/\?h\)4/\15/g' \
+    -e 's/\(<\/\?h\)3/\12/g' \
+    -e 's/\(<\/\?h\)2/\13/g' \
+    -e 's/\(<\/\?h\)1/\12/g' \
+    -e "s/\(<body[^>]*>\)/\1<h1>${title}<\/h1>/g"
+
