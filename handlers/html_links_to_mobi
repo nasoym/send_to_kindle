@@ -21,7 +21,7 @@ parallel --keep-order \
     --from=html \
     --to=html \
     --toc \
-    --toc-depth 2 \
+    --toc-depth 1 \
     --output=${TEMP_FILE}.html
     # --toc \
     # --toc-depth 2 \
@@ -33,10 +33,10 @@ ebook-convert \
   ${TEMP_FILE}.html \
   ${TEMP_FILE}.mobi \
   --level1-toc="//h:h1" \
-  --level2-toc="//h:h2" \
   --output-profile kindle \
   >/dev/null 2>&1
   # --use-auto-toc \
+  # --level2-toc="//h:h2" \
 
 echo "sending ebook" >&2
 
