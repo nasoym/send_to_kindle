@@ -4,6 +4,7 @@ html_content="$(cat -)"
 title="$( echo "$html_content" \
   | hxnormalize -x 2>/dev/null \
   | hxselect -c title 2>/dev/null \
+  | sed -e 's/[^a-zA-Z0-9_. ]//g' \
   | sed -n '1p'
 )"
 
@@ -14,5 +15,7 @@ echo "$html_content" \
     -e 's/\(<\/\?h\)3/\12/g' \
     -e 's/\(<\/\?h\)2/\13/g' \
     -e 's/\(<\/\?h\)1/\12/g' \
-    -e "s/\(<body[^>]*>\)/\1\n<h1>${title}<\/h1>\n/g"
+    -e "s/\(<body[^>]*>\)/\1\n<h1>${title}<\/h1>\n/g" \
+  | hxnormalize -x 2>/dev/null \
+  | hxselect -c body 2>/dev/null
 
