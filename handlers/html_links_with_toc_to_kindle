@@ -23,19 +23,19 @@ parallel --keep-order \
     --to=html \
     --output=${TEMP_FILE}.html
 
-title="$( cat ${TEMP_FILE}.html \
+: ${TITLE:="$( cat ${TEMP_FILE}.html \
   | hxnormalize -x 2>/dev/null \
   | hxselect -c h1 -s '\n' 2>/dev/null \
   | sed -n 1p
-)"
+)"}
 
-echo "using title: $title" >&2
+echo "using title: $TITLE" >&2
 echo "converting ebooks" >&2
 
 ebook-convert \
   ${TEMP_FILE}.html \
   ${TEMP_FILE}.mobi \
-  --title "$title" \
+  --title "$TITLE" \
   --level1-toc="//h:h1" \
   --output-profile kindle \
   >/dev/null 2>&1
