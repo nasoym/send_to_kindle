@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+: ${KINDLE_MAIL:="${1:=""}"}
+[[ -z "$KINDLE_MAIL" ]] && { echo "kindle mail address needs to be specified"; exit 1; }
+
+TEMP_FILE="$(mktemp)"
+
+insert_title_script="$(dirname $(realpath $0))/insert_h1_title_return_body"
+
+echo "use temp file: ${TEMP_FILE}" >&2
+echo "download links" >&2
+
+parallel --keep-order \
+  "cat {} | $insert_title_script " \
+  | pandoc \
+    --standalone \
+    --from=html \
+    --to=html \
+    --output=${TEMP_FILE}.html
+
+: ${TITLE:="$( cat ${TEMP_FILE}.html \
+  | hxnormalize -x 2>/dev/null \
+  | hxselect -c h1 -s '\n' 2>/dev/null \
+  | sed -n 1p
+)"}
+
+echo "using title: $TITLE" >&2
+echo "converting ebooks" >&2
+
+ebook-convert \
+  ${TEMP_FILE}.html \
+  ${TEMP_FILE}.mobi \
+  --title "$TITLE" \
+  --level1-toc="//h:h1" \
+  --output-profile kindle \
+  >/dev/null 2>&1
+
+echo "sending ebook" >&2
+
+echo "body" \
+  | mutt \
+    -F ~/sinan/git_repos/dotfiles/imap_muttrc \
+    -s "ebooks" \
+    -a ${TEMP_FILE}.mobi \
+    -- ${KINDLE_MAIL}
+
+rm -f ${TEMP_FILE} ${TEMP_FILE}.html ${TEMP_FILE}.mobi
+
+
