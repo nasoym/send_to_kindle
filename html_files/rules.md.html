@@ -1,0 +1,75 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Recording rules</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">Recording rules</h1>
+</div>
+<h1 id="recording-rules">Recording rules</h1>
+<p>A consistent naming scheme for <a href="/docs/querying/rules/">recording rules</a> makes it easier to interpret the meaning of a rule at a glance. It also avoids mistakes by making incorrect or meaningless calculations stand out.</p>
+<p>This page documents how to correctly do aggregation and suggests a naming convention.</p>
+<h2 id="naming-and-aggregation">Naming and aggregation</h2>
+<p>Recording rules should be of the general form <code>level:metric:operations</code>. <code>level</code> represents the aggregation level and labels of the rule output. <code>metric</code> is the metric name and should be unchanged other than stripping <code>_total</code> off counters when using <code>rate()</code> or <code>irate()</code>. <code>operations</code> is a list of operations that were applied to the metric, newest operation first.</p>
+<p>Keeping the metric name unchanged makes it easy to know what a metric is and easy to find in the codebase.</p>
+<p>To keep the operations clean, <code>_sum</code> is omitted if there are other operations, as <code>sum()</code>. Associative operations can be merged (for example <code>min_min</code> is the same as <code>min</code>).</p>
+<p>If there is no obvious operation to use, use <code>sum</code>. When taking a ratio by doing division, separate the metrics using <code>_per_</code> and call the operation <code>ratio</code>.</p>
+<p>When aggregating up ratios, aggregate up the numerator and denominator separately and then divide. Do not take the average of a ratio or average of an average as that is not statistically valid.</p>
+<p>When aggregating up the <code>_count</code> and <code>_sum</code> of a Summary and dividing to calculate average observation size, treating it as a ratio would be unwieldy. Instead keep the metric name without the <code>_count</code> or <code>_sum</code> suffix and replace the <code>rate</code> in the operation with <code>mean</code>. This represents the average observation size over that time period.</p>
+<p>Always specify a <code>without</code> clause with the labels you are aggregating away. This is to preserve all the other labels such as <code>job</code>, which will avoid conflicts and give you more useful metrics and alerts.</p>
+<h2 id="examples">Examples</h2>
+<p>Aggregating up requests per second that has a <code>path</code> label:</p>
+<pre><code>instance_path:requests:rate5m =
+  rate(requests_total{job=&quot;myjob&quot;}[5m])
+
+path:requests:rate5m =
+  sum without (instance)(instance_path:requests:rate5m{job=&quot;myjob&quot;})</code></pre>
+<p>Calculating a request failure ratio and aggregating up to the job-level failure ratio:</p>
+<pre><code>instance_path:request_failures:rate5m =
+  rate(request_failures_total{job=&quot;myjob&quot;}[5m])
+
+instance_path:request_failures_per_requests:ratio_rate5m =
+    instance_path:request_failures:rate5m{job=&quot;myjob&quot;}
+  /
+    instance_path:requests:rate5m{job=&quot;myjob&quot;}
+
+// Aggregate up numerator and denominator, then divide to get path-level ratio.
+path:request_failures_per_requests:ratio_rate5m =
+    sum without (instance)(instance_path:request_failures:rate5m{job=&quot;myjob&quot;})
+  /
+    sum without (instance)(instance_path:requests:rate5m{job=&quot;myjob&quot;})
+
+// No labels left from instrumentation or distinguishing instances,
+// so we use &#39;job&#39; as the level.
+job:request_failures_per_requests:ratio_rate5m =
+    sum without (instance, path)(instance_path:request_failures:rate5m{job=&quot;myjob&quot;})
+  /
+    sum without (instance, path)(instance_path:requests:rate5m{job=&quot;myjob&quot;})</code></pre>
+<p>Calculating average latency over a time period from a Summary:</p>
+<pre><code>instance_path:request_latency_seconds_count:rate5m =
+  rate(request_latency_seconds_count{job=&quot;myjob&quot;}[5m])
+
+instance_path:request_latency_seconds_sum:rate5m =
+  rate(request_latency_seconds_sum{job=&quot;myjob&quot;}[5m])
+
+instance_path:request_latency_seconds:mean5m =
+    instance_path:request_latency_seconds_sum:rate5m{job=&quot;myjob&quot;}
+  /
+    instance_path:request_latency_seconds_count:rate5m{job=&quot;myjob&quot;}
+
+// Aggregate up numerator and denominator, then divide.
+path:request_latency_seconds:mean5m =
+    sum without (instance)(instance_path:request_latency_seconds_sum:rate5m{job=&quot;myjob&quot;})
+  /
+    sum without (instance)(instance_path:request_latency_seconds_count:rate5m{job=&quot;myjob&quot;})</code></pre>
+<p>Calculating the average query rate across instances and paths is done using the <code>avg()</code> function:</p>
+<pre><code>job:request_latency_seconds_count:avg_rate5m =
+  avg without (instance, path)(instance:request_latency_seconds_count:rate5m{job=&quot;myjob&quot;})</code></pre>
+<p>Notice that when aggregating that the labels in the <code>without</code> clause are removed from the level of the output metric name compared to the input metric names. When there is no aggregation, the levels always match. If this is not the case a mistake has likely been made in the rules.</p>
+</body>
+</html>

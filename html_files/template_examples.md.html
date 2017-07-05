@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Template examples</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">Template examples</h1>
+</div>
+<h1 id="template-examples">Template examples</h1>
+<p>Prometheus supports templating in the summary and description fields of alerts, as well as in served console pages. Templates have the ability to run queries against the local database, iterate over data, use conditionals, format data, etc. The Prometheus templating language is based on the <a href="http://golang.org/pkg/text/template/">Go templating</a> system.</p>
+<h2 id="simple-alert-field-templates">Simple alert field templates</h2>
+<pre><code>ALERT InstanceDown
+  IF up == 0
+  FOR 5m
+  LABELS {
+    severity=&quot;page&quot;
+  }
+  ANNOTATIONS {
+    summary = &quot;Instance {{$labels.instance}} down&quot;,
+    description = &quot;{{$labels.instance}} of job {{$labels.job}} has been down for more than 5 minutes.&quot;,
+  }</code></pre>
+<p>Alert field templates will be executed during every rule iteration for each alert that fires, so keep any queries and templates lightweight. If you have a need for more complicated templates for alerts, it is recommended to link to a console instead.</p>
+<h2 id="simple-iteration">Simple iteration</h2>
+<p>This displays a list of instances, and whether they are up:</p>
+<pre><code>{{ range query &quot;up&quot; }}
+  {{ .Labels.instance }} {{ .Value }}
+{{ end }}</code></pre>
+<p>The special <code>.</code> variable contains the value of the current sample for each loop iteration.</p>
+<h2 id="display-one-value">Display one value</h2>
+<pre><code>{{ with query &quot;some_metric{instance=&#39;someinstance&#39;}&quot; }}
+  {{ . | first | value | humanize }}
+{{ end }}</code></pre>
+<p>Go and Go's templating language are both strongly typed, so one must check that samples were returned to avoid an execution error. For example this could happen if a scrape or rule evaluation has not run yet, or a host was down.</p>
+<p>The included <code>prom_query_drilldown</code> template handles this, allows for formatting of results, and linking to the <a href="/docs/visualization/browser/">expression browser</a>.</p>
+<h2 id="using-console-url-parameters">Using console URL parameters</h2>
+<pre><code>{{ with printf &quot;node_memory_MemTotal{job=&#39;node&#39;,instance=&#39;%s&#39;}&quot; .Params.instance | query }}
+  {{ . | first | value | humanize1024}}B
+{{ end }}</code></pre>
+<p>If accessed as <code>console.html?instance=hostname</code>, <code>.Params.instance</code> will evaluate to <code>hostname</code>.</p>
+<h2 id="advanced-iteration">Advanced iteration</h2>
+<pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;table&gt;</span>
+{{ range printf &quot;node_network_receive_bytes{job=&#39;node&#39;,instance=&#39;%s&#39;,device!=&#39;lo&#39;}&quot; .Params.instance | query | sortByLabel &quot;device&quot;}}
+  <span class="kw">&lt;tr&gt;&lt;th</span><span class="ot"> colspan=</span><span class="st">2</span><span class="kw">&gt;</span>{{ .Labels.device }}<span class="kw">&lt;/th&gt;&lt;/tr&gt;</span>
+  <span class="kw">&lt;tr&gt;</span>
+    <span class="kw">&lt;td&gt;</span>Received<span class="kw">&lt;/td&gt;</span>
+    <span class="kw">&lt;td&gt;</span>{{ with printf &quot;rate(node_network_receive_bytes{job=&#39;node&#39;,instance=&#39;%s&#39;,device=&#39;%s&#39;}[5m])&quot; .Labels.instance .Labels.device | query }}{{ . | first | value | humanize }}B/s{{end}}<span class="kw">&lt;/td&gt;</span>
+  <span class="kw">&lt;/tr&gt;</span>
+  <span class="kw">&lt;tr&gt;</span>
+    <span class="kw">&lt;td&gt;</span>Transmitted<span class="kw">&lt;/td&gt;</span>
+    <span class="kw">&lt;td&gt;</span>{{ with printf &quot;rate(node_network_transmit_bytes{job=&#39;node&#39;,instance=&#39;%s&#39;,device=&#39;%s&#39;}[5m])&quot; .Labels.instance .Labels.device | query }}{{ . | first | value | humanize }}B/s{{end}}<span class="kw">&lt;/td&gt;</span>
+  <span class="kw">&lt;/tr&gt;</span>{{ end }}
+<span class="kw">&lt;table&gt;</span></code></pre>
+<p>Here we iterate over all network devices and display the network traffic for each.</p>
+<p>As the <code>range</code> action does not specify a variable, <code>.Params.instance</code> is not available inside the loop as <code>.</code> is now the loop variable.</p>
+<h2 id="defining-reusable-templates">Defining reusable templates</h2>
+<p>Prometheus supports defining templates that can be reused. This is particularly powerful when combined with <a href="/docs/visualization/template_reference/#console-templates">console library</a> support, allowing sharing of templates across consoles.</p>
+<pre><code>{{/* Define the template */}}
+{{define &quot;myTemplate&quot;}}
+  do something
+{{end}}
+
+{{/* Use the template */}}
+{{template &quot;myTemplate&quot;}}</code></pre>
+<p>Templates are limited to one argument. The <code>args</code> function can be used to wrap multiple arguments.</p>
+<pre><code>{{define &quot;myMultiArgTemplate&quot;}}
+  First argument: {{.arg0}}
+  Second argument: {{.arg1}}
+{{end}}
+{{template &quot;myMultiArgTemplate&quot; (args 1 2)}}</code></pre>
+</body>
+</html>

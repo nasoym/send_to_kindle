@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Metric and label naming</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">Metric and label naming</h1>
+</div>
+<h1 id="metric-and-label-naming">Metric and label naming</h1>
+<p>The metric and label conventions presented in this document are not required for using Prometheus, but can serve as both a style-guide and a collection of best practices. Individual organizations may want to approach some of these practices, e.g. naming conventions, differently.</p>
+<h2 id="metric-names">Metric names</h2>
+<p>A metric name...</p>
+<ul>
+<li>...should have a (single-word) application prefix relevant to the domain the metric belongs to. The prefix is sometimes referred to as <code>namespace</code> by client libraries. For metrics specific to an application, the prefix is usually the application name itself. Sometimes, however, metrics are more generic, like standardized metrics exported by client libraries. Examples:</li>
+<li><code><b>prometheus</b>_notifications_total</code> (specific to the Prometheus server)</li>
+<li><code><b>process</b>_cpu_seconds_total</code> (exported by many client libraries)</li>
+<li><code><b>http</b>_request_duration_seconds</code> (for all HTTP requests)</li>
+<li>...must have a single unit (i.e. do not mix seconds with milliseconds, or seconds with bytes).</li>
+<li>...should use base units (e.g. seconds, bytes, meters - not milliseconds, megabytes, kilometers).</li>
+<li>...should have a suffix describing the unit, in plural form. Note that an accumulating count has <code>total</code> as a suffix, in addition to the unit if applicable.</li>
+<li><code>http_request_duration_<b>seconds</b></code></li>
+<li><code>node_memory_usage_<b>bytes</b></code></li>
+<li><code>http_requests_<b>total</b></code> (for a unit-less accumulating count)</li>
+<li><code>process_cpu_<b>seconds_total</b></code> (for an accumulating count with unit)</li>
+<li>...should represent the same logical thing-being-measured across all label dimensions.</li>
+<li>request duration</li>
+<li>bytes of data transfer</li>
+<li>instantaneous resource usage as a percentage</li>
+</ul>
+<p>As a rule of thumb, either the <code>sum()</code> or the <code>avg()</code> over all dimensions of a given metric should be meaningful (though not necessarily useful). If it is not meaningful, split the data up into multiple metrics. For example, having the capacity of various queues in one metric is good, while mixing the capacity of a queue with the current number of elements in the queue is not.</p>
+<h2 id="labels">Labels</h2>
+<p>Use labels to differentiate the characteristics of the thing that is being measured:</p>
+<ul>
+<li><code>api_http_requests_total</code> - differentiate request types: <code>type=&quot;create|update|delete&quot;</code></li>
+<li><code>api_request_duration_seconds</code> - differentiate request stages: <code>stage=&quot;extract|transform|load&quot;</code></li>
+</ul>
+<p>Do not put the label names in the metric name, as this introduces redundancy and will cause confusion if the respective labels are aggregated away.</p>
+<p>CAUTION: <strong>CAUTION:</strong> Remember that every unique combination of key-value label pairs represents a new time series, which can dramatically increase the amount of data stored. Do not use labels to store dimensions with high cardinality (many different label values), such as user IDs, email addresses, or other unbounded sets of values.</p>
+</body>
+</html>

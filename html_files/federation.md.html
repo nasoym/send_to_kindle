@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Federation</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">Federation</h1>
+</div>
+<h1 id="federation">Federation</h1>
+<p>Federation allows a Prometheus server to scrape selected time series from another Prometheus server.</p>
+<h2 id="use-cases">Use cases</h2>
+<p>There are different use cases for federation. Commonly, it is used to either achieve scalable Prometheus monitoring setups or to pull related metrics from one service's Prometheus into another.</p>
+<h3 id="hierarchical-federation">Hierarchical federation</h3>
+<p>Hierarchical federation allows Prometheus to scale to environments with tens of data centers and millions of nodes. In this use case, the federation topology resembles a tree, with higher-level Prometheus servers collecting aggregated time series data from a larger number of subordinated servers.</p>
+<p>For example, a setup might consist of many per-datacenter Prometheus servers that collect data in high detail (instance-level drill-down), and a set of global Prometheus servers which collect and store only aggregated data (job-level drill-down) from those local servers. This provides an aggregate global view and detailed local views.</p>
+<h3 id="cross-service-federation">Cross-service federation</h3>
+<p>In cross-service federation, a Prometheus server of one service is configured to scrape selected data from another service's Prometheus server to enable alerting and queries against both datasets within a single server.</p>
+<p>For example, a cluster scheduler running multiple services might expose resource usage information (like memory and CPU usage) about service instances running on the cluster. On the other hand, a service running on that cluster will only expose application-specific service metrics. Often, these two sets of metrics are scraped by separate Prometheus servers. Using federation, the Prometheus server containing service-level metrics may pull in the cluster resource usage metrics about its specific service from the cluster Prometheus, so that both sets of metrics can be used within that server.</p>
+<h2 id="configuring-federation">Configuring federation</h2>
+<p>On any given Prometheus server, the <code>/federate</code> endpoint allows retrieving the current value for a selected set of time series in that server. At least one <code>match[]</code> URL parameter must be specified to select the series to expose. Each <code>match[]</code> argument needs to specify an <a href="/docs/querying/basics/#instant-vector-selectors">instant vector selector</a> like <code>up</code> or <code>{job=&quot;api-server&quot;}</code>. If multiple <code>match[]</code> parameters are provided, the union of all matched series is selected.</p>
+<p>To federate metrics from one server to another, configure your destination Prometheus server to scrape from the <code>/federate</code> endpoint of a source server, while also enabling the <code>honor_labels</code> scrape option (to not overwrite any labels exposed by the source server) and passing in the desired <code>match[]</code> parameters. For example, the following <code>scrape_config</code> federates any series with the label <code>job=&quot;prometheus&quot;</code> or a metric name starting with <code>job:</code> from the Prometheus servers at <code>source-prometheus-{1,2,3}:9090</code> into the scraping Prometheus:</p>
+<pre><code>- job_name: &#39;federate&#39;
+  scrape_interval: 15s
+
+  honor_labels: true
+  metrics_path: &#39;/federate&#39;
+
+  params:
+    &#39;match[]&#39;:
+      - &#39;{job=&quot;prometheus&quot;}&#39;
+      - &#39;{__name__=~&quot;job:.*&quot;}&#39;
+
+  static_configs:
+    - targets:
+      - &#39;source-prometheus-1:9090&#39;
+      - &#39;source-prometheus-2:9090&#39;
+      - &#39;source-prometheus-3:9090&#39;</code></pre>
+</body>
+</html>

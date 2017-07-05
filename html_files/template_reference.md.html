@@ -1,0 +1,206 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Template reference</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">Template reference</h1>
+</div>
+<h1 id="template-reference">Template reference</h1>
+<p>Prometheus supports templating in the summary and description fields of alerts, as well as in served console pages. Templates have the ability to run queries against the local database, iterate over data, use conditionals, format data, etc. The Prometheus templating language is based on the <a href="http://golang.org/pkg/text/template/">Go templating</a> system.</p>
+<h2 id="data-structures">Data Structures</h2>
+<p>The primary data structure for dealing with time series data is the sample, defined as:</p>
+<pre><code>type sample struct {
+        Labels map[string]string
+        Value  float64
+}</code></pre>
+<p>The metric name of the sample is encoded in a special <code>__name__</code> label in the <code>Labels</code> map.</p>
+<p><code>[]sample</code> means a list of samples.</p>
+<p><code>interface{}</code> in Go is similar to a void pointer in C.</p>
+<h2 id="functions">Functions</h2>
+<p>In addition to the <a href="http://golang.org/pkg/text/template/#hdr-Functions">default functions</a> provided by Go templating, Prometheus provides functions for easier processing of query results in templates.</p>
+<p>If functions are used in a pipeline, the pipeline value is passed as the last argument.</p>
+<h3 id="queries">Queries</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Name</th>
+<th align="left">Arguments</th>
+<th align="left">Returns</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">query</td>
+<td align="left">query string</td>
+<td align="left">[]sample</td>
+<td align="left">Queries the database, does not support returning range vectors.</td>
+</tr>
+<tr class="even">
+<td align="left">first</td>
+<td align="left">[]sample</td>
+<td align="left">sample</td>
+<td align="left">Equivalent to <code>index a 0</code></td>
+</tr>
+<tr class="odd">
+<td align="left">label</td>
+<td align="left">label, sample</td>
+<td align="left">string</td>
+<td align="left">Equivalent to <code>index sample.Labels label</code></td>
+</tr>
+<tr class="even">
+<td align="left">value</td>
+<td align="left">sample</td>
+<td align="left">float64</td>
+<td align="left">Equivalent to <code>sample.Value</code></td>
+</tr>
+<tr class="odd">
+<td align="left">sortByLabel</td>
+<td align="left">label, []samples</td>
+<td align="left">[]sample</td>
+<td align="left">Sorts the samples by the given label. Is stable.</td>
+</tr>
+</tbody>
+</table>
+<p><code>first</code>, <code>label</code> and <code>value</code> are intended to make query results easily usable in pipelines.</p>
+<h3 id="numbers">Numbers</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Name</th>
+<th align="left">Arguments</th>
+<th align="left">Returns</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">humanize</td>
+<td align="left">number</td>
+<td align="left">string</td>
+<td align="left">Converts a number to a more readable format, using <a href="http://en.wikipedia.org/wiki/Metric_prefix">metric prefixes</a>.</td>
+</tr>
+<tr class="even">
+<td align="left">humanize1024</td>
+<td align="left">number</td>
+<td align="left">string</td>
+<td align="left">Like <code>humanize</code>, but uses 1024 as the base rather than 1000.</td>
+</tr>
+<tr class="odd">
+<td align="left">humanizeDuration</td>
+<td align="left">number</td>
+<td align="left">string</td>
+<td align="left">Converts a duration in seconds to a more readable format.</td>
+</tr>
+<tr class="even">
+<td align="left">humanizeTimestamp</td>
+<td align="left">number</td>
+<td align="left">string</td>
+<td align="left">Converts a Unix timestamp in seconds to a more readable format.</td>
+</tr>
+</tbody>
+</table>
+<p>Humanizing functions are intended to produce reasonable output for consumption by humans, and are not guaranteed to return the same results between Prometheus versions.</p>
+<h3 id="strings">Strings</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Name</th>
+<th align="left">Arguments</th>
+<th align="left">Returns</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">title</td>
+<td align="left">string</td>
+<td align="left">string</td>
+<td align="left"><a href="http://golang.org/pkg/strings/#Title">strings.Title</a>, capitalises first character of each word.</td>
+</tr>
+<tr class="even">
+<td align="left">toUpper</td>
+<td align="left">string</td>
+<td align="left">string</td>
+<td align="left"><a href="http://golang.org/pkg/strings/#ToUpper">strings.ToUpper</a>, converts all characters to upper case.</td>
+</tr>
+<tr class="odd">
+<td align="left">toLower</td>
+<td align="left">string</td>
+<td align="left">string</td>
+<td align="left"><a href="http://golang.org/pkg/strings/#ToLower">strings.ToLower</a>, converts all characters to lower case.</td>
+</tr>
+<tr class="even">
+<td align="left">match</td>
+<td align="left">pattern, text</td>
+<td align="left">boolean</td>
+<td align="left"><a href="http://golang.org/pkg/regexp/#MatchString">regexp.MatchString</a> Tests for a unanchored regexp match.</td>
+</tr>
+<tr class="odd">
+<td align="left">reReplaceAll</td>
+<td align="left">pattern, replacement, text</td>
+<td align="left">string</td>
+<td align="left"><a href="http://golang.org/pkg/regexp/#Regexp.ReplaceAllString">Regexp.ReplaceAllString</a> Regexp substitution, unanchored.</td>
+</tr>
+<tr class="even">
+<td align="left">graphLink</td>
+<td align="left">expr</td>
+<td align="left">string</td>
+<td align="left">Returns path to graph view in the <a href="/docs/visualization/browser/">expression browser</a> for the expression.</td>
+</tr>
+<tr class="odd">
+<td align="left">tableLink</td>
+<td align="left">expr</td>
+<td align="left">string</td>
+<td align="left">Returns path to tabular (&quot;Console&quot;) view in the <a href="/docs/visualization/browser/">expression browser</a> for the expression.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="others">Others</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Name</th>
+<th align="left">Arguments</th>
+<th align="left">Returns</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">args</td>
+<td align="left">[]interface{}</td>
+<td align="left">map[string]interface{}</td>
+<td align="left">This converts a list of objects to a map with keys arg0, arg1 etc. This is intended to allow multiple arguments to be passed to templates.</td>
+</tr>
+<tr class="even">
+<td align="left">tmpl</td>
+<td align="left">string, []interface{}</td>
+<td align="left">nothing</td>
+<td align="left">Like the built-in <code>template</code>, but allows non-literals as the template name. Note that the result is assumed to be safe, and will not be auto-escaped. Only available in consoles.</td>
+</tr>
+<tr class="odd">
+<td align="left">safeHtml</td>
+<td align="left">string</td>
+<td align="left">string</td>
+<td align="left">Marks string as HTML not requiring auto-escaping.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="template-type-differences">Template type differences</h2>
+<p>Each of the types of templates provide different information that can be used to parameterize templates, and have a few other differences.</p>
+<h3 id="alert-field-templates">Alert field templates</h3>
+<p><code>.Value</code> and <code>.Labels</code> contain the alert value and labels. They are also exposed as the <code>$value</code> and <code>$labels</code> variables for convenience.</p>
+<h3 id="console-templates">Console templates</h3>
+<p>Consoles are exposed on <code>/consoles/</code>, and sourced from the directory pointed to by the <code>-web.console.templates</code> flag.</p>
+<p>Console templates are rendered with <a href="http://golang.org/pkg/html/template/">html/template</a>, which provides auto-escaping. To bypass the auto-escaping use the <code>safe*</code> functions.,</p>
+<p>URL parameters are available as a map in <code>.Params</code>. To access multiple URL parameters by the same name, <code>.RawParams</code> is a map of the list values for each parameter. The URL path is available in <code>.Path</code>, excluding the <code>/consoles/</code> prefix.</p>
+<p>Consoles also have access to all the templates defined with <code>{{define &quot;templateName&quot;}}...{{end}}</code> found in <code>*.lib</code> files in the directory pointed to by the <code>-web.console.libraries</code> flag. As this is a shared namespace, take care to avoid clashes with other users. Template names beginning with <code>prom</code>, <code>_prom</code>, and <code>__</code> are reserved for use by Prometheus, as are the functions listed above.</p>
+</body>
+</html>

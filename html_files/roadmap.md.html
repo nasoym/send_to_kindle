@@ -1,0 +1,34 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Roadmap</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">Roadmap</h1>
+</div>
+<h1 id="roadmap">Roadmap</h1>
+<p>The following is only a selection of some of the major features we plan to implement in the near future. To get a more complete overview of planned features and current work, see the issue trackers for the various repositories, for example, the <a href="https://github.com/prometheus/prometheus/issues">Prometheus server</a>.</p>
+<h3 id="new-storage-engine">New storage engine</h3>
+<p>A new more efficient storage engine is in development. It will offer reduced resource usage, better inverted indexes, and generally allow Prometheus to scale further.</p>
+<h3 id="long-term-storage">Long-term storage</h3>
+<p>Currently Prometheus has support for storing samples on local disk, as well as experimental support for sending data into remote systems via a generic mechanism. Example receivers exist for a <a href="https://github.com/prometheus/prometheus/tree/master/documentation/examples/remote_storage">variety of TSDBs</a>.</p>
+<p>We plan to add read-back support from other TSDBs via a generic mechanism in Prometheus, such as <a href="https://github.com/weaveworks/cortex">Cortex</a>.</p>
+<p>GitHub issue: <a href="https://github.com/prometheus/prometheus/issues/10">#10</a></p>
+<h3 id="improved-staleness-handling">Improved staleness handling</h3>
+<p>Currently Prometheus omits time series from query results if the timestamp for which the query is executed is more than 5 minutes away from the nearest sample. This means that time series will grow &quot;stale&quot; in instant queries after not receiving samples for 5 minutes. This currently prevents usage of client-side timestamps from the Pushgateway or CloudWatch Exporter, which might indicate a time more than 5 minutes in the past. We plan on only considering a time series stale if it was not present in the most recent scrape.</p>
+<p>GitHub issue: <a href="https://github.com/prometheus/prometheus/issues/398">#398</a></p>
+<h3 id="server-side-metric-metadata-support">Server-side metric metadata support</h3>
+<p>At this time, metric types and other metadata are only used in the client libraries and in the exposition format, but not persisted or utilized in the Prometheus server. We plan on making use of this metadata in the future. The first step is to aggregate this data in-memory in Prometheus and provide it via an experimental API endpoint.</p>
+<h3 id="prometheus-metrics-format-as-a-standard">Prometheus metrics format as a standard</h3>
+<p>We intend to submit a cleaned up version of our format for standardization to a group such as the IETF.</p>
+<h3 id="backfill-time-series">Backfill time series</h3>
+<p>Backfilling will permit bulk loads of data in the past. This will allow for retroactive rule evaluations, and transferring old data from other monitoring systems.</p>
+<h3 id="support-the-ecosystem">Support the Ecosystem</h3>
+<p>Prometheus has a range of client libraries and exporters. There are always more languages that could be supported, or systems that would be useful to export metrics from. We will support the ecosystem in creating and expanding these.</p>
+</body>
+</html>
