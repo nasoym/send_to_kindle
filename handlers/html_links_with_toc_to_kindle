@@ -10,6 +10,7 @@ insert_title_script="$(dirname $(realpath $0))/insert_h1_title_return_body"
 echo "use temp file: ${TEMP_FILE}" >&2
 echo "download links" >&2
 
+  # | iconv -t utf-8 -c \
 parallel --keep-order \
   "wget \
     --quiet \
@@ -17,6 +18,7 @@ parallel --keep-order \
     '{}' \
     | $insert_title_script \ 
     " \
+  | iconv -t ascii -c \
   | pandoc \
     --standalone \
     --from=html \
