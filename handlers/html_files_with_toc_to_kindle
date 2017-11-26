@@ -39,7 +39,6 @@ echo "sending ebook" >&2
 
 echo "body" \
   | mutt \
-    -F ~/sinan/git_repos/dotfiles/imap_muttrc \
     -s "ebooks" \
     -a ${TEMP_FILE}.mobi \
     -- ${KINDLE_MAIL}
